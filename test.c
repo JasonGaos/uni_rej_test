@@ -2,9 +2,25 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define MLDSA_N 256
 #define MLDSA_Q 8380417
+#define ITERATIONS 1000
+
+// Timing helper with nanosecond precision
+static inline uint64_t get_time_ns(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+}
+
+#define TIMER_START() uint64_t start_ns = get_time_ns()
+#define TIMER_END(label) do { \
+    uint64_t end_ns = get_time_ns(); \
+    double elapsed_us = (double)(end_ns - start_ns) / 1000.0; \
+    printf("  Time (%s): %.3f us (avg over %d iterations)\n", label, elapsed_us, ITERATIONS); \
+} while(0)
 
 /* External assembly function and table */
 extern const uint8_t mldsa_rej_uniform_table[];
@@ -58,6 +74,13 @@ static void test_basic(void) {
     memset(output_asm, 0, sizeof(output_asm));
     memset(output_c, 0, sizeof(output_c));
 
+    TIMER_START();
+    for (int i = 0; i < ITERATIONS; i++) {
+        uint64_t count = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
+        (void)count;  // Suppress unused warning
+    }
+    TIMER_END("ASM");
+
     uint64_t count_asm = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
     unsigned int count_c = rej_uniform_c_ref(output_c, input, sizeof(input));
 
@@ -106,6 +129,13 @@ static void test_with_rejection(void) {
     memset(output_asm, 0, sizeof(output_asm));
     memset(output_c, 0, sizeof(output_c));
 
+    TIMER_START();
+    for (int i = 0; i < ITERATIONS; i++) {
+        uint64_t count = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
+        (void)count;  // Suppress unused warning
+    }
+    TIMER_END("ASM");
+
     uint64_t count_asm = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
     unsigned int count_c = rej_uniform_c_ref(output_c, input, sizeof(input));
 
@@ -147,6 +177,13 @@ static void test_small_input(void) {
     memset(output_asm, 0, sizeof(output_asm));
     memset(output_c, 0, sizeof(output_c));
 
+    TIMER_START();
+    for (int i = 0; i < ITERATIONS; i++) {
+        uint64_t count = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
+        (void)count;  // Suppress unused warning
+    }
+    TIMER_END("ASM");
+
     uint64_t count_asm = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
     unsigned int count_c = rej_uniform_c_ref(output_c, input, sizeof(input));
 
@@ -186,6 +223,13 @@ static void test_all_rejected(void) {
     memset(output_asm, 0, sizeof(output_asm));
     memset(output_c, 0, sizeof(output_c));
 
+    TIMER_START();
+    for (int i = 0; i < ITERATIONS; i++) {
+        uint64_t count = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
+        (void)count;  // Suppress unused warning
+    }
+    TIMER_END("ASM");
+
     uint64_t count_asm = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
     unsigned int count_c = rej_uniform_c_ref(output_c, input, sizeof(input));
 
@@ -219,6 +263,13 @@ static void test_tail_bytes(void) {
 
     memset(output_asm, 0, sizeof(output_asm));
     memset(output_c, 0, sizeof(output_c));
+
+    TIMER_START();
+    for (int i = 0; i < ITERATIONS; i++) {
+        uint64_t count = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
+        (void)count;  // Suppress unused warning
+    }
+    TIMER_END("ASM");
 
     uint64_t count_asm = REJ_UNIFORM_FN(output_asm, input, sizeof(input), mldsa_rej_uniform_table);
     unsigned int count_c = rej_uniform_c_ref(output_c, input, sizeof(input));
@@ -254,6 +305,7 @@ static void test_tail_bytes(void) {
 int main(void) {
     printf("==============================================\n");
     printf("ML-DSA rej_uniform_asm Test Suite (%s variant)\n", VARIANT_STR);
+    printf("Iterations per test: %d\n", ITERATIONS);
     printf("==============================================\n\n");
 
     test_basic();
@@ -264,6 +316,7 @@ int main(void) {
 
     printf("==============================================\n");
     printf("All tests completed!\n");
+    printf("Variant: %s\n", VARIANT_STR);
     printf("==============================================\n");
 
     return 0;
